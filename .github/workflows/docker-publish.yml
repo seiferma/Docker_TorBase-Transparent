@@ -30,9 +30,12 @@ jobs:
             sudo apt-get update
             sudo apt-get install -y docker-ce docker-ce-cli containerd.io
             docker build . --file Dockerfile -t test-image
-            curl http://checkip.dyndns.org/
-            modprobe nft_redir
-            docker run --rm --cap-add=NET_ADMIN --cap-add=NET_RAW test-image wget -q -O - -T 60 http://checkip.dyndns.org/
+            IP=$(curl -s http://checkip.amazonaws.com)
+            sudo modprobe nft_redir
+            IP2=$(docker run --rm --cap-add=NET_ADMIN --cap-add=NET_RAW tor /bin/sh -c "sleep 20 && wget -q -O - -T 60 http://checkip.amazonaws.com")
+            echo "IP of host:      $IP"
+            echo "IP of container: $IP2"
+            [[ "$IP" != "$IP2" ]] || exit 1
 
   push:
     needs: test
