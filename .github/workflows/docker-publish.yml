@@ -3,42 +3,53 @@ name: Docker
 on:
   push:
     branches:
-      - main
-
-    # Publish `v1.2.3` tags as releases.
+      - '*'
     tags:
-      - v*
-
-  # Run tests for any PRs.
+      - '*'
   pull_request:
+  schedule:
+  - cron: '40 3 * * 6'
 
 env:
-  # TODO: Change variable to your image's name.
-  IMAGE_NAME: tor-transparent-proxy
+  IMAGE_NAME: torbase-transparent
 
 jobs:
-  # Run tests.
-  # See also https://docs.docker.com/docker-hub/builds/automated-testing/
   test:
-    runs-on: ubuntu-latest
-
+  
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v2
 
-      - name: Run tests
-        run: |
-          docker build . --file Dockerfile -t test-image
-          curl http://checkip.dyndns.org/
-          docker run --rm -it --cap-add=NET_ADMIN --cap-add=NET_RAW test-image wget -q -O - -T 60 http://checkip.dyndns.org/
+      - uses: leleliu008/github-actions-vagrant@v1
+        with:
+          mem: 2048
+          box: ubuntu/focal64
+          run: |
+            # Setup docker within Ubuntu VM
+            sudo apt-get update
+            sudo apt-get install -y apt-transport-https ca-certificates curl gnupg-agent software-properties-common
+            curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+            sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+            sudo apt-get update
+            sudo apt-get install -y docker-ce docker-ce-cli containerd.io
 
-  # Push image to GitHub Packages.
-  # See also https://docs.docker.com/docker-hub/builds/
+            # Build docker image within VM
+            docker build . --file Dockerfile -t test-image
+
+            # Test docker image within VM
+            IP=$(curl -s http://checkip.amazonaws.com)
+            sudo modprobe nft_redir
+            IP2=$(docker run --rm --cap-add=NET_ADMIN --cap-add=NET_RAW test-image curl -4 -s http://checkip.amazonaws.com)
+            echo "IP of host:      $IP"
+            echo "IP of container: $IP2"
+            [[ "$IP" != "$IP2" ]] || exit 1
+
+
   push:
-    # Ensure test job passes before pushing image.
     needs: test
 
     runs-on: ubuntu-latest
-    if: github.event_name == 'push'
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')
 
     steps:
       - uses: actions/checkout@v2
@@ -58,9 +69,6 @@ jobs:
 
           # Strip git ref prefix from version
           VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
-
-          # Strip "v" prefix from tag name
-          [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
 
           # Use Docker `latest` tag convention
           [ "$VERSION" == "main" ] && VERSION=latest
