@@ -32,7 +32,7 @@ jobs:
             docker build . --file Dockerfile -t test-image
             IP=$(curl -s http://checkip.amazonaws.com)
             sudo modprobe nft_redir
-            IP2=$(docker run --rm --cap-add=NET_ADMIN --cap-add=NET_RAW test-image /bin/sh -c "sleep 60 && wget -q -O - -T 60 http://checkip.amazonaws.com")
+            IP2=$(docker run --rm --cap-add=NET_ADMIN --cap-add=NET_RAW test-image "wget -q -O - -T 60 http://checkip.amazonaws.com")
             echo "IP of host:      $IP"
             echo "IP of container: $IP2"
             [[ "$IP" != "$IP2" ]] || exit 1
