@@ -1,9 +1,8 @@
-FROM alpine:latest
+FROM ghcr.io/seiferma/torbase:latest
 
-RUN apk add --no-cache tor nftables
+RUN apk add --no-cache curl
 COPY ./torrc /etc/tor/
 COPY ./nftables.conf /etc/
-COPY ./entrypoint.sh /
+COPY ./entrypoint.sh /entrypoint2.sh
 
-ENTRYPOINT ["/entrypoint.sh"]
-CMD ["/bin/sh"]
+ENTRYPOINT ["/entrypoint2.sh"]
