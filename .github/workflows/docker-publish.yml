@@ -41,7 +41,8 @@ jobs:
             echo Load direct IP
             IP=$(curl -s http://checkip.amazonaws.com)
             echo Load tor IP
-            IP2=$(docker run --rm --cap-add=NET_ADMIN --cap-add=NET_RAW test-image curl -4 -s http://checkip.amazonaws.com)
+            DNS_RESULT=$(docker run --rm --cap-add=NET_ADMIN --cap-add=NET_RAW test-image nslookup -type=a checkip.amazonaws.com | grep "Address" | awk '{print $2}' | sed -n 2p)
+            IP2=$(docker run --rm --cap-add=NET_ADMIN --cap-add=NET_RAW test-image curl -s -H "Host: checkip.amazonaws.com" http://$DNS_RESULT)
             echo "IP of host:      $IP"
             echo "IP of container: $IP2"
             [[ "$IP" != "$IP2" ]] || exit 1
