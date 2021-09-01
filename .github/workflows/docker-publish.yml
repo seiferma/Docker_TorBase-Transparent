@@ -16,6 +16,11 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - name: Prepare vagrant
+        run: |
+          vagrant plugin install vagrant-vbguest
+          vagrant vbguest
+
       - uses: leleliu008/github-actions-vagrant@v1
         with:
           mem: 2048
