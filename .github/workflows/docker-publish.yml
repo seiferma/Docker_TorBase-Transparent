@@ -36,8 +36,11 @@ jobs:
             docker build . --file Dockerfile -t test-image
 
             # Test docker image within VM
-            IP=$(curl -s http://checkip.amazonaws.com)
+            echo Load nft_redir
             sudo modprobe nft_redir
+            echo Load direct IP
+            IP=$(curl -s http://checkip.amazonaws.com)
+            echo Load tor IP
             IP2=$(docker run --rm --cap-add=NET_ADMIN --cap-add=NET_RAW test-image curl -4 -s http://checkip.amazonaws.com)
             echo "IP of host:      $IP"
             echo "IP of container: $IP2"
