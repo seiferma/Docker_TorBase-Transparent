@@ -16,6 +16,9 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - name: Prepare vagrant
+        run: vagrant plugin install vagrant-vbguest
+
       - uses: leleliu008/github-actions-vagrant@v1
         with:
           mem: 2048
@@ -33,9 +36,13 @@ jobs:
             docker build . --file Dockerfile -t test-image
 
             # Test docker image within VM
-            IP=$(curl -s http://checkip.amazonaws.com)
+            echo Load nft_redir
             sudo modprobe nft_redir
-            IP2=$(docker run --rm --cap-add=NET_ADMIN --cap-add=NET_RAW test-image curl -4 -s http://checkip.amazonaws.com)
+            echo Load direct IP
+            IP=$(curl -s http://checkip.amazonaws.com)
+            echo Load tor IP
+            DNS_RESULT=$(docker run --rm --cap-add=NET_ADMIN --cap-add=NET_RAW test-image nslookup -type=a checkip.amazonaws.com | grep "Address" | awk '{print $2}' | sed -n 2p)
+            IP2=$(docker run --rm --cap-add=NET_ADMIN --cap-add=NET_RAW test-image curl -s -H "Host: checkip.amazonaws.com" http://$DNS_RESULT)
             echo "IP of host:      $IP"
             echo "IP of container: $IP2"
             [[ "$IP" != "$IP2" ]] || exit 1

@@ -1,4 +1,4 @@
-FROM ghcr.io/seiferma/torbase:latest
+FROM quay.io/seiferma/tor-base:latest
 
 RUN apk add --no-cache curl
 COPY ./torrc /etc/tor/
